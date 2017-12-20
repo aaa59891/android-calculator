@@ -1,5 +1,7 @@
 package com.example.chongchen.calculator;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -14,32 +16,21 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtResult;
 
     private Button btnC;
-    private Button btn1;
-    private Button btn2;
-    private Button btn3;
-    private Button btn4;
-    private Button btn5;
-    private Button btn6;
-    private Button btn7;
-    private Button btn8;
-    private Button btn9;
-    private Button btn0;
 
     private Button btnDot;
 
-    private Button btnPlus;
-    private Button btnMinus;
-    private Button btnDivide;
-    private Button btnMultiply;
-    private Button btnEqual;
+    private Button btnPMSwitch;
 
     private ArrayList<Button> numberBtns;
-    private ArrayList<Button> operatorBtns;
+    private ArrayList<Button> operationBtns;
 
     private static final String TAG = "MainActivity";
+    private static final String STATE_RESET = "reset";
+    private static final String STATE_TEMP = "temp";
+    private static final String STATE_OPERATION = "operation";
     private static boolean reset = false;
     private double temp = 0.0;
-    private String operator = "";
+    private String operation = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,21 +50,21 @@ public class MainActivity extends AppCompatActivity {
             txtResult.append(str);
         };
 
-        View.OnClickListener operatorListener = v -> {
+        View.OnClickListener operationListener = v -> {
             Button btn = (Button) v;
-            String currentOperator = btn.getText().toString();
+            String currentOperation = btn.getText().toString();
             if(reset){
-                this.operator = currentOperator;
+                this.operation = currentOperation;
                 return;
             }
-            String currentStr = this.txtResult.getText().toString();
+            String currentNum = this.txtResult.getText().toString();
             double current = 0;
-            if (currentStr.length() > 0) {
-                current = Double.parseDouble(currentStr);
+            if (currentNum.length() > 0) {
+                current = Double.parseDouble(currentNum);
             }
 
             if(this.temp != 0 || current != 0){
-                switch (operator) {
+                switch (operation) {
                     case "*":
                         this.temp *= current;
                         break;
@@ -97,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 newRes = String.valueOf(this.temp);
             }
             this.txtResult.setText(newRes);
-            this.operator = currentOperator;
+            this.operation = currentOperation;
             reset = true;
         };
 
@@ -105,14 +96,14 @@ public class MainActivity extends AppCompatActivity {
             btn.setOnClickListener(numListener);
         }
 
-        for (Button btn : this.operatorBtns) {
-            btn.setOnClickListener(operatorListener);
+        for (Button btn : this.operationBtns) {
+            btn.setOnClickListener(operationListener);
         }
 
         this.btnC.setOnClickListener(
                 v -> {
                     this.temp = 0.0;
-                    this.operator = "";
+                    this.operation = "";
                     txtResult.setText("");
                 }
         );
@@ -126,6 +117,23 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
+        this.btnPMSwitch.setOnClickListener(
+                v -> {
+                    String resultStr = this.txtResult.getText().toString();
+
+                    if(reset){
+                        this.temp *= -1;
+                    }
+
+                    if(resultStr.contains("-")){
+                        resultStr = resultStr.substring(1);
+                    }else{
+                        resultStr = "-" + resultStr;
+                    }
+                    this.txtResult.setText(resultStr);
+                }
+        );
+
     }
 
     private void initObjects() {
@@ -133,44 +141,65 @@ public class MainActivity extends AppCompatActivity {
         this.txtResult.setFocusable(false);
         this.txtResult.setFocusableInTouchMode(false);
         this.btnC = findViewById(R.id.btnC);
-        this.btn0 = findViewById(R.id.btn0);
-        this.btn1 = findViewById(R.id.btn1);
-        this.btn2 = findViewById(R.id.btn2);
-        this.btn3 = findViewById(R.id.btn3);
-        this.btn4 = findViewById(R.id.btn4);
-        this.btn5 = findViewById(R.id.btn5);
-        this.btn6 = findViewById(R.id.btn6);
-        this.btn7 = findViewById(R.id.btn7);
-        this.btn8 = findViewById(R.id.btn8);
-        this.btn9 = findViewById(R.id.btn9);
+        this.btnPMSwitch = findViewById(R.id.btnPMSwitch);
+
+        Button btn0 = findViewById(R.id.btn0);
+        Button btn1 = findViewById(R.id.btn1);
+        Button btn2 = findViewById(R.id.btn2);
+        Button btn3 = findViewById(R.id.btn3);
+        Button btn4 = findViewById(R.id.btn4);
+        Button btn5 = findViewById(R.id.btn5);
+        Button btn6 = findViewById(R.id.btn6);
+        Button btn7 = findViewById(R.id.btn7);
+        Button btn8 = findViewById(R.id.btn8);
+        Button btn9 = findViewById(R.id.btn9);
 
         this.btnDot = findViewById(R.id.btnDot);
-        this.btnPlus = findViewById(R.id.btnPlus);
-        this.btnMinus = findViewById(R.id.btnMinus);
-        this.btnMultiply = findViewById(R.id.btnMultiply);
-        this.btnEqual = findViewById(R.id.btnEqual);
-        this.btnDivide = findViewById(R.id.btnDivide);
+        Button btnPlus = findViewById(R.id.btnPlus);
+        Button btnMinus = findViewById(R.id.btnMinus);
+        Button btnMultiply = findViewById(R.id.btnMultiply);
+        Button btnEqual = findViewById(R.id.btnEqual);
+        Button btnDivide = findViewById(R.id.btnDivide);
 
         this.numberBtns = new ArrayList<>(Arrays.asList(
-                this.btn0,
-                this.btn1,
-                this.btn2,
-                this.btn3,
-                this.btn4,
-                this.btn5,
-                this.btn6,
-                this.btn7,
-                this.btn8,
-                this.btn9
+                btn0,
+                btn1,
+                btn2,
+                btn3,
+                btn4,
+                btn5,
+                btn6,
+                btn7,
+                btn8,
+                btn9
         ));
 
-        this.operatorBtns = new ArrayList<>(Arrays.asList(
-                this.btnDivide,
-                this.btnMultiply,
-                this.btnMinus,
-                this.btnEqual,
-                this.btnPlus
+        this.operationBtns = new ArrayList<>(Arrays.asList(
+                btnDivide,
+                btnMultiply,
+                btnMinus,
+                btnEqual,
+                btnPlus
         ));
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences sp = getPreferences(Context.MODE_PRIVATE);
+        sp.edit().putString(STATE_OPERATION, this.operation)
+                .putLong(STATE_TEMP, Double.doubleToRawLongBits(this.temp))
+                .putBoolean(STATE_RESET, reset).apply();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        SharedPreferences sp = getPreferences(Context.MODE_PRIVATE);
+        this.operation = sp.getString(STATE_OPERATION, "");
+        long a = sp.getLong(STATE_TEMP, Double.doubleToLongBits(0));
+        this.temp = Double.longBitsToDouble(a);
+        reset = sp.getBoolean(STATE_RESET, false);
+    }
 }
